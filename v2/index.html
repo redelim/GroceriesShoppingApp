@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F7F8F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111512" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Groceries 2">
+<title>Groceries</title>
+<style>
+:root{
+  --paper:#F7F8F7; --card:#FFFFFF; --ink:#14211C; --soft:#5C6B63; --faint:#8A968F;
+  --line:#DDE3DE; --line-strong:#C3CDC6;
+  --go:#1E7A4B; --go-bg:#E4F0E9; --warn:#B8761A; --warn-bg:#F7EDDC; --over:#A8321F; --over-bg:#F6E3DF;
+  --ok-fg:#14523A; --bad-fg:#7C2415; --on-acc:#FFFFFF; --on-ink:#FFFFFF;
+  --track-bg:#EDF0EE; --proj-a:#C9D6CE; --proj-b:#DCE5DF; --stripe-adj:none;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#111512; --card:#1A201C; --ink:#E8EDE9; --soft:#A3AFA8; --faint:#7B8980;
+    --line:#2A322D; --line-strong:#3E4842;
+    --go:#55C48A; --go-bg:#17311F; --warn:#E3A848; --warn-bg:#352814; --over:#F07A62; --over-bg:#3C1C16;
+    --ok-fg:#9FE0BC; --bad-fg:#F6B3A4; --on-acc:#0C1510; --on-ink:#111512;
+    --track-bg:#242D27; --proj-a:#3F5349; --proj-b:#2F3A34; --stripe-adj:saturate(1.35) brightness(1.55);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink)}
+body{
+  font:400 16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+button,input,select{font:inherit;color:inherit}
+button{background:none;border:none;padding:0;cursor:pointer}
+.num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+/* ---------- chrome ---------- */
+#app{max-width:640px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:1px solid var(--line);
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:12px;min-height:54px}
+.top h1{font-size:19px;font-weight:650;margin:0;letter-spacing:-.02em;flex:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .sub{font-size:12.5px;color:var(--faint);font-weight:400;display:block;letter-spacing:0}
+.back{font-size:22px;line-height:1;color:var(--soft);padding:4px 4px 4px 0;margin-left:-4px}
+.tbtn{font-size:14px;font-weight:550;color:var(--go);padding:6px 2px;white-space:nowrap}
+main{flex:1;padding:0 0 8px}
+.pad{padding:0 16px}
+
+/* ---------- bottom nav ---------- */
+nav{position:sticky;bottom:0;z-index:20;display:flex;background:var(--card);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:9px 0 11px;font-size:11px;color:var(--faint);font-weight:500;
+  display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button .g{font-size:19px;line-height:1;filter:grayscale(1);opacity:.55}
+nav button.on{color:var(--ink);font-weight:600}
+nav button.on .g{filter:none;opacity:1}
+
+/* ---------- generic ---------- */
+.sect{margin:22px 0 0}
+.sect-h{display:flex;align-items:baseline;gap:8px;padding:0 16px 7px;
+  font-size:13px;font-weight:650;letter-spacing:.01em;color:var(--soft)}
+.sect-h .r{margin-left:auto;font-weight:450;color:var(--faint);font-size:12.5px}
+.rows{background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:none}
+.row .nm{flex:1;min-width:0;font-size:15.5px;line-height:1.25}
+.row .nm small{display:block;font-size:12px;color:var(--faint);margin-top:2px}
+.muted{color:var(--faint)}
+.empty{padding:46px 32px;text-align:center;color:var(--faint);font-size:14.5px;line-height:1.6}
+.empty b{display:block;color:var(--ink);font-weight:600;font-size:16px;margin-bottom:6px}
+.btn{display:block;width:100%;padding:13px;border-radius:var(--r);background:var(--ink);color:var(--on-ink);
+  font-weight:600;font-size:15.5px;text-align:center}
+.btn.sec{background:var(--card);color:var(--ink);border:1px solid var(--line-strong);font-weight:550}
+.btn.danger{background:var(--card);color:var(--over);border:1px solid var(--line-strong)}
+.btn[disabled]{opacity:.4}
+.btn+.btn{margin-top:9px}
+input[type=text],input[type=number],select{width:100%;padding:11px 12px;border:1px solid var(--line-strong);
+  border-radius:8px;background:var(--card);color:var(--ink);-webkit-appearance:none;appearance:none}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--soft) 50%),linear-gradient(135deg,var(--soft) 50%,transparent 50%);
+  background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px}
+label.f{display:block;margin:14px 0 0;font-size:13px;font-weight:600;color:var(--soft)}
+label.f input,label.f select{margin-top:6px}
+
+/* ---------- pot stripe: encodes which envelope a category charges ---------- */
+.stripe{width:3px;align-self:stretch;border-radius:2px;flex:none;filter:var(--stripe-adj)}
+
+/* ---------- prep rows ---------- */
+.tog{flex:none;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line-strong);
+  display:flex;align-items:center;justify-content:center;font-size:15px;color:transparent}
+.tog.on{background:var(--go);border-color:var(--go);color:var(--on-acc)}
+.row.off .nm{color:var(--faint)}
+.qty{display:flex;align-items:center;gap:2px;flex:none}
+.qty button{width:29px;height:29px;border-radius:7px;border:1px solid var(--line-strong);
+  font-size:16px;line-height:1;color:var(--soft);background:var(--card)}
+.qty .v{min-width:28px;text-align:center;font-size:15px;font-weight:600}
+.row.off .qty{opacity:.35;pointer-events:none}
+
+/* ---------- shopping rows ---------- */
+.box{flex:none;width:26px;height:26px;border-radius:7px;border:1.5px solid var(--line-strong);
+  display:flex;align-items:center;justify-content:center;font-size:15px;color:transparent;background:var(--card)}
+.box.on{background:var(--ink);border-color:var(--ink);color:var(--on-ink)}
+.row.got .nm{text-decoration:line-through;text-decoration-color:var(--line-strong);color:var(--faint)}
+.price{flex:none;min-width:74px;text-align:right;font-size:15.5px;font-weight:600;
+  padding:5px 0 5px 8px;border-bottom:1px dashed var(--line-strong)}
+.price.guess{color:var(--faint);font-weight:450}
+.price.none{color:var(--warn);font-weight:500}
+.price small{display:block;font-size:10.5px;font-weight:400;color:var(--faint);
+  border:0;letter-spacing:0;margin-top:1px}
+
+/* ---------- the budget bar (the one bold element) ---------- */
+.dock{position:sticky;bottom:0;z-index:15;background:var(--card);border-top:1px solid var(--line-strong);
+  padding:11px 16px calc(11px + env(safe-area-inset-bottom))}
+.totals{display:flex;align-items:flex-end;gap:16px;margin-bottom:9px}
+.tot{line-height:1}
+.tot .k{font-size:11.5px;color:var(--faint);display:block;margin-bottom:3px}
+.tot .v{font-size:25px;font-weight:680;letter-spacing:-.025em}
+.tot.proj{margin-left:auto;text-align:right}
+.tot.proj .v{font-size:19px;font-weight:600;color:var(--soft)}
+.tot.proj.warn .v{color:var(--warn)}
+.tot.proj.over .v{color:var(--over)}
+.bar{margin-top:7px}
+.bar .lbl{display:flex;font-size:11.5px;color:var(--faint);margin-bottom:3px}
+.bar .lbl .r{margin-left:auto}
+.track{position:relative;height:15px;border-radius:4px;background:var(--track-bg);overflow:hidden}
+.track .proj{position:absolute;inset:0 auto 0 0;background:repeating-linear-gradient(
+  115deg,var(--proj-a) 0 5px,var(--proj-b) 5px 10px)}
+.track .bask{position:absolute;inset:0 auto 0 0;background:var(--go)}
+.track.warn .bask{background:var(--warn)}
+.track.over .bask{background:var(--over)}
+.track .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink)}
+.track .tick:after{content:"";position:absolute;top:0;left:-2px;width:6px;height:4px;background:var(--ink)}
+
+/* ---------- receipt ---------- */
+.slip{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  margin:16px;padding:18px 18px 16px}
+.slip h2{margin:0;font-size:20px;font-weight:650;letter-spacing:-.02em}
+.slip .when{color:var(--faint);font-size:13px;margin:3px 0 16px}
+.li{display:flex;gap:10px;padding:5px 0;font-size:14.5px;align-items:baseline}
+.li .n{flex:1;min-width:0}
+.li .n em{font-style:normal;color:var(--faint);font-size:12.5px}
+.li .a{font-weight:550;white-space:nowrap}
+.rule{border-top:1px solid var(--line);margin:12px 0}
+.rule.heavy{border-top:2px solid var(--ink);margin:12px 0 10px}
+.grand{display:flex;align-items:baseline;font-weight:680;font-size:20px;letter-spacing:-.02em}
+.grand .a{margin-left:auto}
+.grp{font-size:12px;font-weight:650;color:var(--soft);margin:16px 0 4px}
+.delta{margin-top:14px;padding:11px 13px;border-radius:8px;font-size:14px;line-height:1.45}
+.delta.ok{background:var(--go-bg);color:var(--ok-fg)}
+.delta.bad{background:var(--over-bg);color:var(--bad-fg)}
+
+/* ---------- floating add, shopping screen ---------- */
+.fab{position:fixed;right:16px;z-index:18;width:56px;height:56px;border-radius:18px;
+  background:var(--go);color:var(--on-acc);font-size:30px;line-height:1;font-weight:400;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,.28)}
+.deal{display:inline-block;font-size:10.5px;font-weight:600;color:var(--go);
+  background:var(--go-bg);border-radius:4px;padding:1px 5px;margin-top:3px}
+.price .was{display:block;font-size:10.5px;font-weight:400;color:var(--faint);
+  text-decoration:line-through;margin-top:1px}
+.handle{flex:none;width:34px;align-self:stretch;display:flex;align-items:center;
+  justify-content:center;color:var(--faint);font-size:17px;touch-action:none;cursor:grab}
+.row.dragging{background:var(--card);box-shadow:0 6px 18px rgba(0,0,0,.3);
+  position:relative;z-index:5;border-radius:8px}
+
+/* ---------- sheet ---------- */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40;display:flex;
+  align-items:flex-end;justify-content:center}
+.sheet{background:var(--paper);width:100%;max-width:640px;border-radius:16px 16px 0 0;
+  padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
+.sheet h3{margin:0 0 2px;font-size:18px;font-weight:650;letter-spacing:-.02em}
+.sheet .hint{color:var(--faint);font-size:13.5px;margin:0 0 14px;line-height:1.45}
+.sheet .acts{margin-top:18px}
+.opt{display:flex;align-items:center;gap:10px;width:100%;padding:13px 14px;background:var(--card);
+  border:1px solid var(--line);border-radius:9px;margin-top:8px;text-align:left;font-size:15px}
+.opt .a{margin-left:auto;font-weight:600}
+.sugg{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.sugg button{padding:7px 11px;border:1px solid var(--line-strong);border-radius:99px;
+  font-size:13.5px;background:var(--card)}
+.fundrow{display:flex;gap:8px;align-items:center;margin-top:8px}
+.fundrow select{flex:1}
+.fundrow input{width:104px;text-align:right}
+.fundrow button.x{flex:none;width:34px;height:40px;color:var(--faint);font-size:19px}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .17s ease-out}}
+@keyframes up{from{transform:translateY(14px)}}
+:focus-visible{outline:2px solid var(--go);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal"></div>
+
+<script>
+"use strict";
+
+/* ======================= storage ======================= */
+/* Single JSON blob. Uses the artifact storage API when present,
+   falls back to localStorage when running standalone on the phone. */
+/* This build keeps its own data, separate from the original app at the folder
+   above. Both live on the same domain and would otherwise share one store.
+   On first run we take a copy of the old app's data; the original is never
+   written to again, so it stays as a working fallback. */
+const KEY = "grocery-state-v2";
+const OLD_KEY = "grocery-state-v1";
+const Store = {
+  async load(){
+    try{
+      if (window.storage){ const r = await window.storage.get(KEY); return r ? JSON.parse(r.value) : null; }
+      const raw = localStorage.getItem(KEY);
+      if (raw) return JSON.parse(raw);
+      const old = localStorage.getItem(OLD_KEY);
+      if (old){
+        const data = JSON.parse(old);
+        data.migratedFrom = "v1";
+        localStorage.setItem(KEY, JSON.stringify(data));   // copy, never move
+        return data;
+      }
+      return null;
+    }catch(e){ return null; }
+  },
+  async save(st){
+    const json = JSON.stringify(st);
+    try{
+      if (window.storage){ await window.storage.set(KEY, json); return true; }
+      localStorage.setItem(KEY, json); return true;
+    }catch(e){ console.error("save failed", e); return false; }
+  }
+};
+
+/* ======================= state ======================= */
+let S = null;              // persisted
+let UI = { view:"lists", listId:null, runId:null, period:null, modal:null };
+let saveTimer = null;
+function persist(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>Store.save(S), 120); }
+function uid(){ return ++S.seq; }
+
+/* ======================= seed ======================= */
+const SEED = [
+ ["Canned","g",["Sweetcorn|4","Bully beef|4","Tuna","Condensed milk","Mossels|2","Jam","Marmite"]],
+ ["Fridge","g",["Yogurt 6-pack|2","Cheese 800g","Butter tub","Margarine block","Eggs"]],
+ ["Fruit and Veg","g",["Tomato","Green pepper","Lettuce","Banana","Apples","Grapes","Peaches","Pineapple","Potatoes"]],
+ ["Meat","g",["Chicken breast 10-pack","Chicken drumsticks 10-pack","Chicken nuggets 1kg|2","Pork tjops|6","Bacon diced pack","Biltong 1kg","Steak|4"]],
+ ["Cool drink","g",["Cola 2l|6","Oros","Ice tea"]],
+ ["Snacks","g",["Mini cheddar|3","Chips","Mini chocs","Wafers","Popcorn","2-minute noodles|4"]],
+ ["Frozen","g",["Ice cream 5l","Corn 750g"]],
+ ["Spice","g",["Six Gun","Garlic","Aromat","Instant sauce","Tomato sauce","Worcester","Soya","Chilli"]],
+ ["Daily","g",["Bread","Milk","Coffee","Hot chocolate","Wraps","Syrup","Peanut butter","Pasta","Muffin mix","Sugar","Vanilla","Tea","Rice"]],
+ ["Breakfast","g",["Weetbix","Oats","Pronutro","Husky"]],
+ ["Cleaning","t",["Washing powder","Staysoft","Oven cleaner","Asblik sakke","Toilet paper 24-pack","Tissues"]],
+ ["Toiletries","t",["Body wash","Dry shampoo","Makeup remover","Hair mask"]]
+];
+
+function seed(){
+  const st = { seq:0, pots:[], cats:[], items:[], stores:[], prices:[], lists:[],
+               listItems:[], periodPots:[], runs:[], runItems:[], funding:[], expenses:[] };
+  S = st;
+  const gro = {id:uid(), name:"Groceries", amount:5000, color:"#1E7A4B", sort:1};
+  const toi = {id:uid(), name:"Toiletries", amount:500,  color:"#4A6FA5", sort:2};
+  const wk  = {id:uid(), name:"Weekly",     amount:1000, color:"#8A6BA8", sort:3};
+  st.pots = [gro,toi,wk];
+  st.stores = [{id:uid(), name:"Monthly store", archived:false},
+               {id:uid(), name:"Weekly store",  archived:false}];
+  const monthly = {id:uid(), name:"Monthly", type:"monthly", potId:null, archived:false};
+  const weekly  = {id:uid(), name:"Weekly",  type:"weekly",  potId:wk.id, archived:false};
+  st.lists = [monthly, weekly];
+
+  let cs=0;
+  SEED.forEach(([cname, potKey, items])=>{
+    const cat = {id:uid(), name:cname, sort:++cs, potId: potKey==="t" ? toi.id : gro.id};
+    st.cats.push(cat);
+    items.forEach(spec=>{
+      const [nm, q] = spec.split("|");
+      const it = {id:uid(), name:nm, catId:cat.id, archived:false};
+      st.items.push(it);
+      st.listItems.push({id:uid(), listId:monthly.id, itemId:it.id,
+                         qty: q?+q:1, status:"no_need"});
+    });
+  });
+  persist();
+}
+
+/* ======================= lookups ======================= */
+const byId = (arr,id)=>arr.find(x=>x.id===id);
+const pot   = id=>byId(S.pots,id);
+const cat   = id=>byId(S.cats,id);
+const item  = id=>byId(S.items,id);
+const store = id=>byId(S.stores,id);
+const list  = id=>byId(S.lists,id);
+const run   = id=>byId(S.runs,id);
+const liOf  = id=>S.listItems.filter(x=>x.listId===id);
+const riOf  = id=>S.runItems.filter(x=>x.runId===id);
+const catSorted = ()=>[...S.cats].sort((a,b)=>a.sort-b.sort);
+
+/* which pot does a run item charge? list override wins over category */
+function potForItem(r, ri){
+  const l = list(r.listId);
+  if (l && l.potId) return l.potId;
+  const it = item(ri.itemId); const c = it && cat(it.catId);
+  return c ? c.potId : S.pots[0].id;
+}
+
+/* ======================= prices ======================= */
+function latestPrice(itemId, storeId){
+  let best=null;
+  for(const p of S.prices)
+    if(p.itemId===itemId && p.storeId===storeId && (!best || p.at>best.at)) best=p;
+  return best;
+}
+function anyPrice(itemId){
+  let best=null;
+  for(const p of S.prices)
+    if(p.itemId===itemId && (!best || p.at>best.at)) best=p;
+  return best;
+}
+/* resolve a price for an unticked item at the current store */
+function resolve(itemId, storeId){
+  const exact = latestPrice(itemId, storeId);
+  if(exact) return {price:exact.price, src:"store", at:exact.at};
+  const fb = anyPrice(itemId);
+  if(fb) return {price:fb.price, src:"fallback", storeId:fb.storeId, at:fb.at};
+  return {price:null, src:"new"};
+}
+/* ---- specials ----
+   The remembered price is always the NORMAL price. A deal is attached to one
+   trip only, so next month starts from the normal price again. */
+function dealLabel(d){
+  if(!d) return "";
+  if(d.t==="nfm")  return `${d.n} for ${d.m}`;
+  if(d.t==="pct")  return `${d.v}% off`;
+  if(d.t==="off")  return `${money(d.v)} off each`;
+  if(d.t==="each") return `${money(d.v)} each`;
+  return "";
+}
+function lineBase(qty, price){ return qty*(price||0); }
+function lineTotal(qty, price, deal){
+  price = price||0; qty = qty||0;
+  if(!deal) return qty*price;
+  if(deal.t==="nfm"){
+    const n=Math.max(1,deal.n), m=Math.max(0,deal.m);
+    const groups=Math.floor(qty/n);
+    return (groups*m + (qty - groups*n)) * price;
+  }
+  if(deal.t==="pct")  return qty*price*(1-(deal.v||0)/100);
+  if(deal.t==="off")  return qty*Math.max(0, price-(deal.v||0));
+  if(deal.t==="each") return qty*(deal.v||0);
+  return qty*price;
+}
+const riTotal = ri => lineTotal(ri.qty, ri.price, ri.deal);
+const riSaved = ri => lineBase(ri.qty, ri.price) - riTotal(ri);
+
+function recordPrice(itemId, storeId, price){
+  S.prices.push({id:uid(), itemId, storeId, price, at:Date.now()});
+}
+
+/* ======================= money & dates ======================= */
+function money(n, dec){
+  if(n==null || isNaN(n)) return "—";
+  const neg = n<0; n = Math.abs(n);
+  const s = (dec===false && n%1===0) ? String(Math.round(n)) : n.toFixed(2);
+  const [i,f] = s.split(".");
+  const gi = i.replace(/\B(?=(\d{3})+(?!\d))/g, "\u202F");
+  return (neg?"-R":"R") + gi + (f?"."+f:"");
+}
+const m0 = n => money(n, false);
+function periodOf(ts){ const d=new Date(ts); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+function thisPeriod(){ return periodOf(Date.now()); }
+function periodLabel(p){
+  const [y,m]=p.split("-");
+  return ["January","February","March","April","May","June","July","August",
+          "September","October","November","December"][+m-1]+" "+y;
+}
+function shiftPeriod(p, d){
+  let [y,m]=p.split("-").map(Number); m+=d;
+  while(m<1){m+=12;y--} while(m>12){m-=12;y++}
+  return y+"-"+String(m).padStart(2,"0");
+}
+function dayLabel(ts){
+  const d=new Date(ts);
+  return d.getDate()+" "+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()];
+}
+
+/* ======================= budget maths ======================= */
+function potAmount(period, potId){
+  const row = S.periodPots.find(x=>x.period===period && x.potId===potId);
+  if(row) return row.amount;
+  const p = pot(potId); return p ? p.amount : 0;
+}
+function setPotAmount(period, potId, amount){
+  let row = S.periodPots.find(x=>x.period===period && x.potId===potId);
+  if(row) row.amount = amount;
+  else S.periodPots.push({id:uid(), period, potId, amount, note:""});
+}
+/* auto funding split for a run, by pot */
+function autoFunding(r){
+  const m = new Map();
+  riOf(r.id).filter(x=>x.ticked).forEach(ri=>{
+    const pid = potForItem(r, ri);
+    m.set(pid, (m.get(pid)||0) + riTotal(ri));
+  });
+  return [...m].map(([potId,amount])=>({potId, amount}));
+}
+function fundingOf(runId){
+  const rows = S.funding.filter(f=>f.runId===runId);
+  if(rows.length) return rows;
+  return autoFunding(run(runId)).map(f=>({...f, runId, auto:true}));
+}
+function monthSpend(period){
+  const out = {byPot:new Map(), external:0, runs:[], expenses:[]};
+  S.runs.filter(r=>r.status==="done" && r.period===period).forEach(r=>{
+    out.runs.push(r);
+    fundingOf(r.id).forEach(f=>{
+      if(f.potId==null) out.external += f.amount;
+      else out.byPot.set(f.potId, (out.byPot.get(f.potId)||0) + f.amount);
+    });
+  });
+  (S.expenses||[]).filter(e=>e.period===period).forEach(e=>{
+    out.expenses.push(e);
+    if(e.potId==null) out.external += e.amount;
+    else out.byPot.set(e.potId, (out.byPot.get(e.potId)||0) + e.amount);
+  });
+  return out;
+}
+/* how much of a tracked item was bought in a month */
+function trackedTotals(period){
+  const m = new Map();
+  S.runs.filter(r=>r.status==="done" && r.period===period).forEach(r=>{
+    riOf(r.id).forEach(ri=>{
+      const it = item(ri.itemId);
+      if(!it || !it.track) return;
+      const cur = m.get(it.id) || {name:it.name, qty:0, spend:0, trips:0};
+      cur.qty += ri.qty; cur.spend += riTotal(ri); cur.trips++;
+      m.set(it.id, cur);
+    });
+  });
+  return [...m.values()].sort((a,b)=>b.qty-a.qty);
+}
+function runTotal(r){ return riOf(r.id).filter(x=>x.ticked).reduce((s,x)=>s+riTotal(x),0); }
+function runSaved(r){ return riOf(r.id).filter(x=>x.ticked).reduce((s,x)=>s+riSaved(x),0); }
+
+/* live figures for the shopping screen */
+function liveTotals(r){
+  const basket=new Map(), proj=new Map();
+  let bt=0, pt=0;
+  riOf(r.id).forEach(ri=>{
+    const pid = potForItem(r, ri);
+    if(ri.ticked){
+      const v = riTotal(ri);
+      basket.set(pid,(basket.get(pid)||0)+v); proj.set(pid,(proj.get(pid)||0)+v);
+      bt+=v; pt+=v;
+    }else{
+      const rp = resolve(ri.itemId, r.storeId);
+      const v = ri.qty*(rp.price||0);
+      proj.set(pid,(proj.get(pid)||0)+v); pt+=v;
+    }
+  });
+  return {basket, proj, basketTotal:bt, projTotal:pt};
+}
+
+/* ======================= render helpers ======================= */
+const esc = s => String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function h(html){ const t=document.createElement("template"); t.innerHTML=html.trim(); return t.content.firstElementChild; }
+
+function potBar(label, spent, projected, budget){
+  const scale = Math.max(budget, projected, 1);
+  const state = spent>budget ? "over" : (projected>budget ? "warn" : "");
+  const tick = budget<=scale ? `<div class="tick" style="left:${(budget/scale*100).toFixed(2)}%"></div>` : "";
+  return `<div class="bar">
+    <div class="lbl"><span>${esc(label)}</span>
+      <span class="r num">${m0(spent)} of ${m0(budget)}</span></div>
+    <div class="track ${state}">
+      <div class="proj" style="width:${Math.min(projected/scale*100,100).toFixed(2)}%"></div>
+      <div class="bask" style="width:${Math.min(spent/scale*100,100).toFixed(2)}%"></div>
+      ${tick}
+    </div></div>`;
+}
+
+/* ======================= views ======================= */
+let lastView = null;
+function render(){
+  const app = document.getElementById("app");
+  /* A re-render inside the same screen shouldn't throw you back to the top. */
+  const sameScreen = (lastView === UI.view + ":" + (UI.listId||"") + ":" + (UI.runId||""));
+  const y = window.scrollY;
+  app.innerHTML = "";
+  const v = UI.view;
+  if(v==="lists")   app.append(...viewLists());
+  else if(v==="prep")    app.append(...viewPrep());
+  else if(v==="shop")    app.append(...viewShop());
+  else if(v==="receipt") app.append(...viewReceipt());
+  else if(v==="budget")  app.append(...viewBudget());
+  else if(v==="settings")app.append(...viewSettings());
+  if(["lists","budget","settings"].includes(v)) app.append(navBar(v));
+  lastView = UI.view + ":" + (UI.listId||"") + ":" + (UI.runId||"");
+  if(sameScreen) window.scrollTo(0, y);
+  else window.scrollTo(0, 0);
+  if(UI.view==="shop") placeFab();
+}
+function navBar(cur){
+  const n = h(`<nav>
+    <button data-go="lists"    class="${cur==="lists"?"on":""}"><span class="g">🧺</span>Lists</button>
+    <button data-go="budget"   class="${cur==="budget"?"on":""}"><span class="g">📊</span>Budget</button>
+    <button data-go="settings" class="${cur==="settings"?"on":""}"><span class="g">⚙️</span>Setup</button>
+  </nav>`);
+  n.onclick = e=>{ const b=e.target.closest("[data-go]"); if(!b) return;
+    UI.view=b.dataset.go; if(UI.view==="budget"&&!UI.period) UI.period=thisPeriod(); render(); };
+  return n;
+}
+
+/* ---------- home ---------- */
+function viewLists(){
+  const top = h(`<div class="top"><h1>Lists</h1>
+    <button class="tbtn" id="newlist">New list</button></div>`);
+  top.querySelector("#newlist").onclick = sheetNewList;
+
+  const main = h(`<main></main>`);
+  if(S.migratedFrom && !S.migratedSeen){
+    const note = h(`<div class="pad" style="margin-top:16px">
+      <div style="background:var(--go-bg);color:var(--ok-fg);border-radius:var(--r);
+        padding:13px 14px;font-size:13.5px;line-height:1.5">
+        Your lists and prices were copied over from the first version. That one still works and
+        still has its own copy, so nothing you do here can touch it.
+        <button style="display:block;margin-top:9px;font-weight:650;color:inherit">Got it</button>
+      </div></div>`);
+    note.querySelector("button").onclick = ()=>{ S.migratedSeen = true; persist(); render(); };
+    main.append(note);
+  }
+  const active = S.runs.filter(r=>r.status==="shopping");
+  if(active.length){
+    const box = h(`<div class="sect"><div class="sect-h">Shopping now</div>
+      <div class="rows"></div></div>`);
+    active.forEach(r=>{
+      const t = liveTotals(r);
+      const row = h(`<div class="row" style="cursor:pointer">
+        <div class="nm">${esc(list(r.listId)?.name||"List")}
+          <small>${riOf(r.id).filter(x=>x.ticked).length} of ${riOf(r.id).length} picked up · ${esc(store(r.storeId)?.name||"")}</small></div>
+        <div class="num" style="font-weight:650">${m0(t.basketTotal)}</div></div>`);
+      row.onclick = ()=>{ UI.runId=r.id; UI.view="shop"; render(); };
+      box.querySelector(".rows").append(row);
+    });
+    main.append(box);
+  }
+
+  const live = S.lists.filter(l=>!l.archived);
+  const box = h(`<div class="sect"><div class="sect-h">Your lists</div><div class="rows"></div></div>`);
+  if(!live.length){
+    main.append(h(`<div class="empty"><b>No lists yet</b>Create one to start tracking.</div>`));
+  }else{
+    live.forEach(l=>{
+      const n = liOf(l.id).filter(x=>x.status==="need").length;
+      const last = S.runs.filter(r=>r.listId===l.id && r.status==="done").sort((a,b)=>b.doneAt-a.doneAt)[0];
+      const sub = l.type==="general"
+        ? (last? "Last shopped "+dayLabel(last.doneAt) : "Not shopped yet")
+        : `${n} marked to buy` + (last? " · last "+dayLabel(last.doneAt) : "");
+      const row = h(`<div class="row" style="cursor:pointer">
+        <div class="nm">${esc(l.name)}<small>${esc(sub)}</small></div>
+        <span class="muted">›</span></div>`);
+      row.onclick = ()=>openList(l);
+      box.querySelector(".rows").append(row);
+    });
+    main.append(box);
+  }
+  return [top, main];
+}
+function openList(l){
+  if(l.type==="general"){
+    let r = S.runs.find(x=>x.listId===l.id && x.status==="shopping");
+    if(!r) r = startRun(l);
+    UI.runId=r.id; UI.view="shop";
+  }else{ UI.listId=l.id; UI.view="prep"; }
+  render();
+}
+
+/* ---------- prep ---------- */
+function viewPrep(){
+  const l = list(UI.listId);
+  const rows = liOf(l.id);
+  const need = rows.filter(x=>x.status==="need");
+
+  const top = h(`<div class="top"><button class="back">‹</button>
+    <h1 style="cursor:pointer">${esc(l.name)} <span style="color:var(--faint);font-weight:400">✎</span>
+      <span class="sub">${need.length} of ${rows.length} marked to buy</span></h1>
+    <button class="tbtn" id="add">Add item</button></div>`);
+  top.querySelector(".back").onclick = ()=>{ UI.view="lists"; render(); };
+  top.querySelector("h1").onclick = ()=>sheetListOpts(l);
+  top.querySelector("#add").onclick = ()=>sheetAddItem(l);
+
+  const main = h(`<main></main>`);
+  if(!rows.length){
+    main.append(h(`<div class="empty"><b>Nothing on this list</b>Add the things you buy and mark what you need each month.</div>`));
+  }
+  catSorted().forEach(c=>{
+    const mine = rows.filter(li=>item(li.itemId) && item(li.itemId).catId===c.id && !item(li.itemId).archived);
+    if(!mine.length) return;
+    const p = pot(l.potId || c.potId);
+    const on = mine.filter(x=>x.status==="need").length;
+    const sec = h(`<div class="sect">
+      <div class="sect-h">${esc(c.name)}<span class="r">${on} of ${mine.length}</span></div>
+      <div class="rows"></div></div>`);
+    const body = sec.querySelector(".rows");
+    mine.forEach(li=>{
+      const it = item(li.itemId);
+      const r = h(`<div class="row ${li.status==="need"?"":"off"}">
+        <div class="stripe" style="background:${p?p.color:"#ccc"}"></div>
+        <button class="tog ${li.status==="need"?"on":""}">✓</button>
+        <div class="nm">${esc(it.name)}</div>
+        <div class="qty">
+          <button data-d="-1">−</button><span class="v num">${li.qty}</span><button data-d="1">+</button>
+        </div></div>`);
+      r.querySelector(".tog").onclick = ()=>{
+        li.status = li.status==="need" ? "no_need" : "need"; persist(); render();
+      };
+      r.querySelectorAll("[data-d]").forEach(b=> b.onclick = ()=>{
+        li.qty = Math.max(1, li.qty + (+b.dataset.d)); persist(); render();
+      });
+      let press;
+      r.addEventListener("pointerdown", ()=>{ press=setTimeout(()=>sheetItemOpts(l,li), 520); });
+      ["pointerup","pointerleave","pointercancel"].forEach(ev=>
+        r.addEventListener(ev, ()=>clearTimeout(press)));
+      body.append(r);
+    });
+    main.append(sec);
+  });
+
+  /* projection dock */
+  const dock = h(`<div class="dock"></div>`);
+  if(need.length){
+    let est=0, unknown=0;
+    const byPot=new Map();
+    const sid = defaultStore(l);
+    need.forEach(li=>{
+      const rp = resolve(li.itemId, sid);
+      if(rp.price==null) unknown++;
+      const v = li.qty*(rp.price||0); est+=v;
+      const it=item(li.itemId), c=cat(it.catId), pid = l.potId || c.potId;
+      byPot.set(pid,(byPot.get(pid)||0)+v);
+    });
+    const per = thisPeriod();
+    let overNote="";
+    for(const [pid,v] of byPot){
+      const b = potAmount(per,pid) - (monthSpend(per).byPot.get(pid)||0);
+      if(v>b) overNote += `<div style="color:var(--over);font-size:12.5px;margin-top:6px">${esc(pot(pid).name)} over by ${m0(v-b)}</div>`;
+    }
+    dock.innerHTML = `<div class="totals">
+        <div class="tot"><span class="k">Estimated total</span><span class="v num">${m0(est)}</span></div>
+        <div class="tot proj"><span class="k">${need.length} items${unknown?` · ${unknown} no price yet`:""}</span></div>
+      </div>${overNote}`;
+    const go = h(`<button class="btn" style="margin-top:10px">Go shopping</button>`);
+    go.onclick = ()=>{ const r = startRun(l); UI.runId=r.id; UI.view="shop"; render(); };
+    dock.append(go);
+  }else{
+    dock.innerHTML = `<div class="muted" style="text-align:center;font-size:14px;padding:4px 0">
+      Mark what you need, then go shopping.</div>`;
+  }
+  return [top, main, dock];
+}
+function defaultStore(l){
+  const last = S.runs.filter(r=>r.listId===l.id && r.storeId).sort((a,b)=>b.startedAt-a.startedAt)[0];
+  return last ? last.storeId : (S.stores.filter(s=>!s.archived)[0]||{}).id;
+}
+
+/* ---------- start a run ---------- */
+function startRun(l){
+  const r = {id:uid(), listId:l.id, type:l.type, period:thisPeriod(),
+             startedAt:Date.now(), doneAt:null, status:"shopping",
+             storeId: defaultStore(l), eventName:null};
+  S.runs.push(r);
+  if(l.type!=="general"){
+    liOf(l.id).filter(x=>x.status==="need").forEach(li=>{
+      const it = item(li.itemId);
+      S.runItems.push({id:uid(), runId:r.id, itemId:it.id, name:it.name,
+                       qty:li.qty, price:null, storeId:null, ticked:false, src:null});
+    });
+  }
+  persist();
+  return r;
+}
+
+/* ---------- shopping ---------- */
+function viewShop(){
+  const r = run(UI.runId);
+  const l = list(r.listId);
+  const t = liveTotals(r);
+  const items = riOf(r.id);
+
+  const top = h(`<div class="top"><button class="back">‹</button>
+    <h1>${esc(l.name)}<span class="sub">${items.filter(x=>x.ticked).length} of ${items.length} picked up</span></h1>
+    <select id="st" style="width:auto;max-width:42%;padding:7px 9px;font-size:13.5px"></select></div>`);
+  top.querySelector(".back").onclick = ()=>sheetLeaveTrip(r, l);
+  const sel = top.querySelector("#st");
+  S.stores.filter(s=>!s.archived).forEach(s=>{
+    const o=document.createElement("option"); o.value=s.id; o.textContent=s.name;
+    if(s.id===r.storeId) o.selected=true; sel.append(o);
+  });
+  sel.onchange = ()=>{ r.storeId = +sel.value; persist(); render(); };
+
+  const main = h(`<main></main>`);
+  if(!items.length){
+    main.append(h(`<div class="empty"><b>Nothing here yet</b>Add what you're buying as you go.</div>`));
+  }
+  catSorted().forEach(c=>{
+    const mine = items.filter(ri=>{ const it=item(ri.itemId); return it && it.catId===c.id; });
+    if(!mine.length) return;
+    const p = pot(l.potId || c.potId);
+    const sec = h(`<div class="sect"><div class="sect-h">${esc(c.name)}
+      <span class="r">${mine.filter(x=>x.ticked).length} of ${mine.length}</span></div>
+      <div class="rows"></div></div>`);
+    mine.forEach(ri=>sec.querySelector(".rows").append(shopRow(r, ri, p)));
+    main.append(sec);
+  });
+
+  main.append(h(`<div style="height:18px"></div>`));
+  const fab = h(`<button class="fab" id="fab" aria-label="Add an item">+</button>`);
+  fab.onclick = ()=>sheetAddToRun(r);
+  main.append(fab);
+
+  /* dock */
+  const dock = h(`<div class="dock"></div>`);
+  const per = r.period, spendNow = monthSpend(per);
+  const pots = [...new Set(items.map(ri=>potForItem(r,ri)))];
+  let bars="";
+  pots.forEach(pid=>{
+    const already = spendNow.byPot.get(pid)||0;
+    bars += potBar(pot(pid).name, already+(t.basket.get(pid)||0),
+                   already+(t.proj.get(pid)||0), potAmount(per,pid));
+  });
+  const projBudget = pots.reduce((s,pid)=>s+potAmount(per,pid)-(spendNow.byPot.get(pid)||0),0);
+  const cls = t.basketTotal>projBudget ? "over" : (t.projTotal>projBudget ? "warn" : "");
+  dock.innerHTML = `<div class="totals">
+      <div class="tot"><span class="k">In basket</span><span class="v num">${m0(t.basketTotal)}</span></div>
+      <div class="tot proj ${cls}"><span class="k">Projected</span><span class="v num">${m0(t.projTotal)}</span></div>
+    </div>${bars}`;
+  const done = h(`<button class="btn" style="margin-top:11px">Done shopping</button>`);
+  done.onclick = ()=>finishRun(r);
+  dock.append(done);
+  return [top, main, dock];
+}
+
+function shopRow(r, ri, p){
+  const it = item(ri.itemId);
+  let priceHtml;
+  if(ri.ticked){
+    const saved = riSaved(ri);
+    priceHtml = `<div class="price num">${money(riTotal(ri))}` +
+      (saved>0.009 ? `<span class="was">${money(lineBase(ri.qty,ri.price))}</span>` : "") + `</div>`;
+  }else{
+    const rp = resolve(ri.itemId, r.storeId);
+    if(rp.price==null) priceHtml = `<div class="price none">add</div>`;
+    else if(rp.src==="fallback") priceHtml =
+      `<div class="price guess num">${money(rp.price*ri.qty)}<small>${esc(store(rp.storeId)?.name||"other store")}</small></div>`;
+    else priceHtml = `<div class="price guess num">${money(rp.price*ri.qty)}</div>`;
+  }
+  const row = h(`<div class="row ${ri.ticked?"got":""}">
+    <div class="stripe" style="background:${p?p.color:"#ccc"}"></div>
+    <button class="box ${ri.ticked?"on":""}">✓</button>
+    <div class="nm">${esc(it.name)}${ri.deal?`<span class="deal">${esc(dealLabel(ri.deal))}</span>`:""}</div>
+    <div class="qty"><button data-d="-1">−</button><span class="v num">${ri.qty}</span><button data-d="1">+</button></div>
+    ${priceHtml}</div>`);
+  row.querySelector(".box").onclick = ()=>{
+    if(ri.ticked){ ri.ticked=false; persist(); render(); return; }
+    const rp = resolve(ri.itemId, r.storeId);
+    if(rp.price==null){ sheetPrice(r, ri, null, true); return; }
+    ri.ticked=true; ri.price=rp.price; ri.storeId=r.storeId; ri.src=rp.src;
+    if(rp.src==="fallback") recordPrice(ri.itemId, r.storeId, rp.price);
+    persist(); render();
+  };
+  row.querySelectorAll("[data-d]").forEach(b=> b.onclick = ()=>{
+    ri.qty = Math.max(1, ri.qty + (+b.dataset.d)); persist(); render(); });
+  row.querySelector(".price").onclick = ()=>{
+    const rp = ri.ticked ? {price:ri.price} : resolve(ri.itemId, r.storeId);
+    sheetPrice(r, ri, rp.price, !ri.ticked);
+  };
+  return row;
+}
+
+function placeFab(){
+  const fab = document.getElementById("fab"), dock = document.querySelector(".dock");
+  if(fab && dock) fab.style.bottom = (dock.offsetHeight + 14) + "px";
+}
+
+function sheetLeaveTrip(r, l){
+  const ticked = riOf(r.id).filter(x=>x.ticked).length;
+  const hint = ticked
+    ? `${ticked} item${ticked===1?"":"s"} already picked up. Leaving the trip running keeps them.`
+    : `Nothing picked up yet.`;
+  sheet(`<h3>Leave this trip?</h3><p class="hint">${esc(hint)}</p>`,
+    [["Leave it running", ()=>{ closeSheet(); UI.view="lists"; render(); }, "sec"],
+     ["Back to editing the list", ()=>{
+        closeSheet();
+        if(ticked){
+          sheet(`<h3>Throw away this trip?</h3>
+            <p class="hint">${ticked} picked-up item${ticked===1?"":"s"} and ${ticked===1?"its":"their"} prices go with it.
+            Prices you already saved stay remembered.</p>`,
+            [["Throw it away", ()=>{ cancelRun(r, l); }, "danger"]]);
+        }else cancelRun(r, l);
+      }, l.type==="general" ? "sec" : undefined]]);
+}
+function cancelRun(r, l){
+  S.runItems = S.runItems.filter(x=>x.runId!==r.id);
+  S.runs = S.runs.filter(x=>x.id!==r.id);
+  persist(); closeSheet();
+  if(l.type==="general"){ UI.view="lists"; }
+  else { UI.listId=l.id; UI.view="prep"; }
+  render(); toast("Trip cancelled.");
+}
+
+/* ---------- finish ---------- */
+function finishRun(r){
+  const picked = riOf(r.id).filter(x=>x.ticked);
+  if(!picked.length){ toast("Nothing ticked yet."); return; }
+  S.runItems = S.runItems.filter(x=>x.runId!==r.id || x.ticked);
+  r.status="done"; r.doneAt=Date.now(); r.period=periodOf(r.doneAt);
+  autoFunding(r).forEach(f=>S.funding.push({id:uid(), runId:r.id, potId:f.potId, amount:f.amount}));
+  const l = list(r.listId);
+  if(l && l.type!=="general") liOf(l.id).forEach(li=>li.status="no_need");
+  persist();
+  UI.runId = r.id; UI.view="receipt"; render();
+}
+
+/* ---------- receipt ---------- */
+function viewReceipt(){
+  const r = run(UI.runId), l = list(r.listId);
+  const items = riOf(r.id);
+  const total = runTotal(r);
+  const funds = S.funding.filter(f=>f.runId===r.id);
+
+  const top = h(`<div class="top"><button class="back">‹</button>
+    <h1>${esc(l.name)}<span class="sub">${dayLabel(r.doneAt)} · ${items.length} items</span></h1></div>`);
+  top.querySelector(".back").onclick = ()=>{ UI.view="budget"; UI.period=r.period; render(); };
+
+  const main = h(`<main></main>`);
+  const slip = h(`<div class="slip"></div>`);
+  slip.innerHTML = `<h2>${esc(l.name)}</h2>
+    <div class="when">${new Date(r.doneAt).toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>`;
+
+  /* by store */
+  const stores = [...new Set(items.map(x=>x.storeId))];
+  stores.forEach(sid=>{
+    const mine = items.filter(x=>x.storeId===sid);
+    if(stores.length>1) slip.append(h(`<div class="grp">${esc(store(sid)?.name||"Store")}</div>`));
+    mine.forEach(ri=>{
+      const sv = riSaved(ri);
+      const meta = [ri.qty>1 ? `${ri.qty} × ${money(ri.price)}` : "",
+                    ri.deal ? dealLabel(ri.deal) : ""].filter(Boolean).join(" · ");
+      slip.append(h(`<div class="li"><div class="n">${esc(ri.name)}
+        ${meta?`<em> ${esc(meta)}</em>`:""}</div>
+        <div class="a num">${money(riTotal(ri))}</div></div>`));
+    });
+    if(stores.length>1){
+      const sub = mine.reduce((s,x)=>s+riTotal(x),0);
+      slip.append(h(`<div class="li" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px">
+        <div class="n muted">Subtotal</div><div class="a num">${money(sub)}</div></div>`));
+    }
+  });
+  slip.append(h(`<div class="rule heavy"></div>`));
+  slip.append(h(`<div class="grand"><span>Total</span><span class="a num">${money(total)}</span></div>`));
+  const saved = runSaved(r);
+  if(saved>0.009) slip.append(h(`<div class="li" style="margin-top:4px">
+    <div class="n" style="color:var(--go)">Specials saved you</div>
+    <div class="a num" style="color:var(--go)">${money(saved)}</div></div>`));
+
+  /* funding */
+  slip.append(h(`<div class="grp" style="margin-top:18px">Paid from</div>`));
+  funds.forEach(f=>{
+    slip.append(h(`<div class="li"><div class="n">${f.potId==null?"Saved money (off budget)":esc(pot(f.potId).name)}</div>
+      <div class="a num">${money(f.amount)}</div></div>`));
+  });
+  const editF = h(`<button class="btn sec" style="margin-top:12px">Change where it came from</button>`);
+  editF.onclick = ()=>sheetFunding(r);
+  slip.append(editF);
+
+  /* budget delta */
+  const spend = monthSpend(r.period);
+  let msg="", bad=false;
+  funds.filter(f=>f.potId!=null).forEach(f=>{
+    const b = potAmount(r.period, f.potId), used = spend.byPot.get(f.potId)||0;
+    const left = b-used;
+    if(left<0){ bad=true; msg += `${pot(f.potId).name} is ${m0(-left)} over for ${periodLabel(r.period)}. `; }
+    else msg += `${pot(f.potId).name}: ${m0(left)} left this month. `;
+  });
+  if(spend.external>0) msg += `${m0(spend.external)} came from savings.`;
+  slip.append(h(`<div class="delta ${bad?"bad":"ok"}">${esc(msg)}</div>`));
+  main.append(slip);
+
+  const acts = h(`<div class="pad" style="margin-top:6px"></div>`);
+  const b1 = h(`<button class="btn">Back to lists</button>`);
+  b1.onclick = ()=>{ UI.view="lists"; render(); };
+  acts.append(b1);
+  main.append(acts);
+  return [top, main];
+}
+
+/* ---------- budget ---------- */
+function viewBudget(){
+  const per = UI.period || thisPeriod();
+  UI.period = per;
+  const spend = monthSpend(per);
+
+  const top = h(`<div class="top">
+    <button class="tbtn" id="prev">‹</button>
+    <h1 style="text-align:center">${periodLabel(per)}</h1>
+    <button class="tbtn" id="next">›</button>
+    <button class="tbtn" id="addexp">+ Spend</button></div>`);
+  top.querySelector("#prev").onclick = ()=>{ UI.period=shiftPeriod(per,-1); render(); };
+  top.querySelector("#next").onclick = ()=>{ UI.period=shiftPeriod(per, 1); render(); };
+  top.querySelector("#addexp").onclick = ()=>sheetExpense(per, null);
+
+  const main = h(`<main></main>`);
+  const box = h(`<div class="sect" style="margin-top:16px"><div class="rows" style="padding:4px 16px 14px"></div></div>`);
+  const body = box.querySelector(".rows");
+  let totalB=0, totalS=0;
+  [...S.pots].sort((a,b)=>a.sort-b.sort).forEach(p=>{
+    const b = potAmount(per,p.id), s = spend.byPot.get(p.id)||0;
+    totalB+=b; totalS+=s;
+    const w = h(`<div style="padding:12px 0;border-bottom:1px solid var(--line)">
+      ${potBar(p.name, s, s, b)}
+      <div style="display:flex;font-size:12.5px;margin-top:5px;color:var(--faint)">
+        <span>${s>b?"Over by "+m0(s-b):m0(b-s)+" left"}</span>
+        <button class="r" style="margin-left:auto;color:var(--go);font-weight:550">Change budget</button>
+      </div></div>`);
+    w.querySelector("button").onclick = ()=>sheetPotAmount(per, p);
+    body.append(w);
+  });
+  if(spend.external>0){
+    body.append(h(`<div style="padding:12px 0;display:flex;font-size:14px">
+      <span>Saved money used</span><span class="num" style="margin-left:auto;font-weight:600">${money(spend.external)}</span></div>`));
+  }
+  body.append(h(`<div style="padding:12px 0 0;display:flex;font-size:15px;font-weight:650">
+    <span>Spent this month</span><span class="num" style="margin-left:auto">${money(totalS)} of ${m0(totalB)}</span></div>`));
+  main.append(box);
+
+  const runs = spend.runs.sort((a,b)=>b.doneAt-a.doneAt);
+  const rbox = h(`<div class="sect"><div class="sect-h">Shopping trips<span class="r">${runs.length}</span></div>
+    <div class="rows"></div></div>`);
+  if(!runs.length){
+    rbox.querySelector(".rows").append(h(`<div class="empty" style="padding:30px 20px">Nothing shopped in ${esc(periodLabel(per))}.</div>`));
+  }
+  runs.forEach(r=>{
+    const sv = runSaved(r);
+    const row = h(`<div class="row" style="cursor:pointer">
+      <div class="nm">${esc(list(r.listId)?.name||"List")}
+        <small>${dayLabel(r.doneAt)} · ${riOf(r.id).length} items${sv>0.009?` · saved ${m0(sv)}`:""}</small></div>
+      <div class="num" style="font-weight:650">${m0(runTotal(r))}</div>
+      <span class="muted">›</span></div>`);
+    row.onclick = ()=>{ UI.runId=r.id; UI.view="receipt"; render(); };
+    rbox.querySelector(".rows").append(row);
+  });
+  main.append(rbox);
+
+  /* unplanned spending, entered as a bare amount */
+  const exps = spend.expenses.sort((a,b)=>b.at-a.at);
+  const ebox = h(`<div class="sect"><div class="sect-h">Other spending
+    <button class="r" style="color:var(--go);font-weight:600">Add</button></div><div class="rows"></div></div>`);
+  ebox.querySelector("button").onclick = ()=>sheetExpense(per, null);
+  if(!exps.length){
+    ebox.querySelector(".rows").append(h(`<div class="empty" style="padding:26px 22px">
+      Quick stop at the shops with no list? Record just the amount so it still counts.</div>`));
+  }
+  exps.forEach(e=>{
+    const row = h(`<div class="row" style="cursor:pointer">
+      <div class="nm">${esc(e.note||"Unplanned spend")}
+        <small>${dayLabel(e.at)} · ${e.potId==null?"saved money":esc(pot(e.potId)?.name||"")}</small></div>
+      <div class="num" style="font-weight:650">${m0(e.amount)}</div>
+      <span class="muted">›</span></div>`);
+    row.onclick = ()=>sheetExpense(per, e);
+    ebox.querySelector(".rows").append(row);
+  });
+  main.append(ebox);
+
+  /* monthly counts for items you asked to watch */
+  const tracked = trackedTotals(per);
+  if(tracked.length){
+    const tbox = h(`<div class="sect"><div class="sect-h">Counted this month
+      <span class="r">${tracked.length} item${tracked.length===1?"":"s"}</span></div><div class="rows"></div></div>`);
+    tracked.forEach(t=>{
+      tbox.querySelector(".rows").append(h(`<div class="row">
+        <div class="nm">${esc(t.name)}<small>over ${t.trips} trip${t.trips===1?"":"s"}</small></div>
+        <div style="text-align:right">
+          <div class="num" style="font-weight:680;font-size:18px">${t.qty}</div>
+          <div class="num" style="font-size:11.5px;color:var(--faint)">${m0(t.spend)}</div></div></div>`));
+    });
+    main.append(tbox);
+  }else{
+    main.append(h(`<div class="pad" style="margin-top:22px;font-size:12.5px;color:var(--faint);line-height:1.5">
+      To count how many of something you get through in a month — cola, milk, coffee — hold it down on a
+      list and choose to count it.</div>`));
+  }
+  main.append(h(`<div style="height:16px"></div>`));
+  return [top, main];
+}
+
+/* ---------- settings ---------- */
+function viewSettings(){
+  const top = h(`<div class="top"><h1>Setup</h1></div>`);
+  const main = h(`<main></main>`);
+
+  /* pots */
+  const pb = h(`<div class="sect"><div class="sect-h">Budget pots
+    <button class="r" style="color:var(--go);font-weight:600">Add</button></div><div class="rows"></div></div>`);
+  pb.querySelector("button").onclick = ()=>sheetPot(null);
+  [...S.pots].sort((a,b)=>a.sort-b.sort).forEach(p=>{
+    const row = h(`<div class="row" style="cursor:pointer">
+      <div class="stripe" style="background:${p.color}"></div>
+      <div class="nm">${esc(p.name)}<small>Default ${m0(p.amount)} a month</small></div>
+      <span class="muted">›</span></div>`);
+    row.onclick = ()=>sheetPot(p);
+    pb.querySelector(".rows").append(row);
+  });
+  main.append(pb);
+
+  /* categories */
+  const cb = h(`<div class="sect"><div class="sect-h">Aisles
+    <button class="r" style="color:var(--go);font-weight:600">Add</button></div>
+    <div style="padding:0 16px 7px;font-size:12px;color:var(--faint);margin-top:-5px">
+      Drag the handles into the order you walk the shop.</div>
+    <div class="rows" id="aisles"></div></div>`);
+  cb.querySelector("button").onclick = ()=>sheetCat(null);
+  const abody = cb.querySelector("#aisles");
+  catSorted().forEach(c=>{
+    const p = pot(c.potId);
+    const count = S.items.filter(i=>i.catId===c.id && !i.archived).length;
+    const row = h(`<div class="row" data-cat="${c.id}">
+      <div class="stripe" style="background:${p?p.color:"#ccc"}"></div>
+      <div class="nm" style="cursor:pointer">${esc(c.name)}<small>${esc(p?p.name:"—")} · ${count} item${count===1?"":"s"}</small></div>
+      <div class="handle">⠿</div></div>`);
+    row.querySelector(".nm").onclick = ()=>sheetCat(c);
+    makeDraggable(row, abody);
+    abody.append(row);
+  });
+  main.append(cb);
+
+  /* stores */
+  const sb = h(`<div class="sect"><div class="sect-h">Shops
+    <button class="r" style="color:var(--go);font-weight:600">Add</button></div><div class="rows"></div></div>`);
+  sb.querySelector("button").onclick = ()=>sheetStore(null);
+  S.stores.filter(s=>!s.archived).forEach(s=>{
+    const n = S.prices.filter(p=>p.storeId===s.id).length;
+    const row = h(`<div class="row" style="cursor:pointer"><div class="nm">${esc(s.name)}
+      <small>${n} price${n===1?"":"s"} remembered</small></div><span class="muted">›</span></div>`);
+    row.onclick = ()=>sheetStore(s);
+    sb.querySelector(".rows").append(row);
+  });
+  main.append(sb);
+
+  /* storage + backup */
+  const days = S.lastExport ? Math.floor((Date.now()-S.lastExport)/864e5) : null;
+  const stale = days===null || days>30;
+  const backupLine = days===null
+    ? "You haven't made a backup yet."
+    : (days===0 ? "Backed up today." : `Last backup ${days} day${days===1?"":"s"} ago.`);
+  const bb = h(`<div class="pad" style="margin-top:26px">
+    <div id="protect" style="font-size:12.5px;margin-bottom:10px;line-height:1.5;color:var(--faint)">
+      Checking how this phone is storing your data…</div>
+    <div style="font-size:12.5px;margin-bottom:10px;line-height:1.5;color:${stale?"var(--warn)":"var(--faint)"}">
+      ${esc(backupLine)} A backup file is the only copy that survives a wiped phone.</div>
+    </div>`);
+  checkPersistence(bb.querySelector("#protect"));
+  const ex = h(`<button class="btn sec">Export a backup file</button>`);
+  ex.onclick = exportData;
+  const im = h(`<button class="btn sec">Restore from a backup</button>`);
+  im.onclick = importData;
+  const rs = h(`<button class="btn danger" style="margin-top:22px">Erase everything and start over</button>`);
+  rs.onclick = ()=>{
+    sheet(`<h3>Erase everything?</h3><p class="hint">Every list, price and receipt goes. This cannot be undone.</p>`,
+      [["Erase everything", ()=>{ seed(); closeSheet(); UI.view="lists"; render(); toast("Started over."); }, "danger"]]);
+  };
+  bb.append(ex, im, rs);
+  main.append(bb);
+  return [top, main];
+}
+
+/* ---- drag to reorder, pointer based so it works with a thumb ---- */
+function makeDraggable(row, container){
+  const handle = row.querySelector(".handle");
+  if(!handle) return;
+  handle.addEventListener("pointerdown", e=>{
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    const rows = [...container.children];
+    const startIdx = rows.indexOf(row);
+    const h = row.offsetHeight;
+    const y0 = e.clientY;
+    let idx = startIdx;
+    row.classList.add("dragging");
+    if(navigator.vibrate) navigator.vibrate(12);
+
+    const move = ev=>{
+      const dy = ev.clientY - y0;
+      row.style.transform = `translateY(${dy}px)`;
+      const want = Math.max(0, Math.min(rows.length-1, startIdx + Math.round(dy/h)));
+      if(want !== idx){
+        rows.forEach((r,i)=>{
+          if(r===row) return;
+          let shift = 0;
+          if(i>startIdx && i<=want) shift = -h;
+          else if(i<startIdx && i>=want) shift = h;
+          r.style.transform = shift ? `translateY(${shift}px)` : "";
+          r.style.transition = "transform .12s ease";
+        });
+        idx = want;
+      }
+    };
+    const up = ()=>{
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      handle.removeEventListener("pointercancel", up);
+      row.classList.remove("dragging");
+      rows.forEach(r=>{ r.style.transform=""; r.style.transition=""; });
+      if(idx !== startIdx){
+        const order = catSorted();
+        const [moved] = order.splice(startIdx, 1);
+        order.splice(idx, 0, moved);
+        order.forEach((c,i)=> c.sort = i+1);
+        persist();
+      }
+      render();
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+    handle.addEventListener("pointercancel", up);
+  });
+}
+
+/* ======================= sheets ======================= */
+function sheet(inner, actions){
+  const m = document.getElementById("modal");
+  const scrim = h(`<div class="scrim"><div class="sheet">${inner}<div class="acts"></div></div></div>`);
+  const acts = scrim.querySelector(".acts");
+  (actions||[]).forEach(([label, fn, kind])=>{
+    const b = h(`<button class="btn ${kind==="danger"?"danger":(kind==="sec"?"sec":"")}">${esc(label)}</button>`);
+    b.onclick = fn; acts.append(b);
+  });
+  const c = h(`<button class="btn sec">Cancel</button>`); c.onclick = closeSheet; acts.append(c);
+  scrim.onclick = e=>{ if(e.target===scrim) closeSheet(); };
+  m.innerHTML=""; m.append(scrim);
+  const first = scrim.querySelector("input,select"); if(first) setTimeout(()=>first.focus(),60);
+  return scrim;
+}
+function closeSheet(){ document.getElementById("modal").innerHTML=""; }
+function toast(msg){
+  const t = h(`<div style="position:fixed;left:50%;bottom:86px;transform:translateX(-50%);z-index:60;
+    background:var(--ink);color:var(--on-ink);padding:10px 16px;border-radius:99px;font-size:14px;
+    max-width:88%;text-align:center">${esc(msg)}</div>`);
+  document.body.append(t); setTimeout(()=>t.remove(), 2200);
+}
+
+/* price sheet — normal price, plus any special for this trip only */
+function sheetPrice(r, ri, current, tickAfter){
+  const it = item(ri.itemId);
+  const hist = S.prices.filter(p=>p.itemId===ri.itemId).sort((a,b)=>b.at-a.at).slice(0,4);
+  let hh = "";
+  if(hist.length) hh = `<div class="sugg">` + hist.map(p=>
+    `<button data-p="${p.price}">${money(p.price)} · ${esc(store(p.storeId)?.name||"")}</button>`).join("") + `</div>`;
+
+  let deal = ri.deal ? {...ri.deal} : null;
+  const s = sheet(`<h3>${esc(it.name)}</h3>
+    <p class="hint">The normal price for one at ${esc(store(r.storeId)?.name||"this shop")}. This is what gets
+    remembered — a special below applies to this trip only.</p>
+    <label class="f">Normal price each
+      <input type="number" inputmode="decimal" step="0.01" id="p" value="${current!=null?current:""}" placeholder="0.00"></label>
+    ${hh}
+    <label class="f">Special
+      <select id="dt">
+        <option value="">No special</option>
+        <option value="nfm">Buy some, pay for fewer</option>
+        <option value="pct">Percent off</option>
+        <option value="off">Rand off each</option>
+        <option value="each">Special price each</option>
+      </select></label>
+    <div id="dfields"></div>
+    <div id="dsum" style="font-size:13px;margin-top:10px;color:var(--faint)"></div>`,
+    [["Save", ()=>{
+      const v = parseFloat(s.querySelector("#p").value);
+      if(isNaN(v) || v<0){ toast("Enter a price first."); return; }
+      recordPrice(ri.itemId, r.storeId, v);
+      ri.price = v; ri.storeId = r.storeId; ri.src = "manual"; ri.deal = deal;
+      if(tickAfter) ri.ticked = true;
+      persist(); closeSheet(); render();
+    }]]);
+
+  const dt = s.querySelector("#dt"), df = s.querySelector("#dfields");
+  if(deal) dt.value = deal.t;
+
+  function fields(){
+    const t = dt.value;
+    if(t==="nfm") df.innerHTML = `<div style="display:flex;gap:10px">
+        <label class="f" style="flex:1;margin-top:10px">Buy<input type="number" inputmode="numeric" id="dn" value="${deal&&deal.t==="nfm"?deal.n:3}"></label>
+        <label class="f" style="flex:1;margin-top:10px">Pay for<input type="number" inputmode="numeric" id="dm" value="${deal&&deal.t==="nfm"?deal.m:2}"></label></div>`;
+    else if(t==="pct") df.innerHTML = `<label class="f">Percent off<input type="number" inputmode="decimal" id="dv" value="${deal&&deal.t==="pct"?deal.v:""}" placeholder="20"></label>`;
+    else if(t==="off") df.innerHTML = `<label class="f">Rand off each<input type="number" inputmode="decimal" step="0.01" id="dv" value="${deal&&deal.t==="off"?deal.v:""}" placeholder="5.00"></label>`;
+    else if(t==="each") df.innerHTML = `<label class="f">Special price each<input type="number" inputmode="decimal" step="0.01" id="dv" value="${deal&&deal.t==="each"?deal.v:""}" placeholder="0.00"></label>`;
+    else df.innerHTML = "";
+    df.querySelectorAll("input").forEach(i=> i.oninput = read);
+    read();
+  }
+  function read(){
+    const t = dt.value;
+    if(!t) deal = null;
+    else if(t==="nfm") deal = {t:"nfm", n:+(s.querySelector("#dn")?.value||3), m:+(s.querySelector("#dm")?.value||2)};
+    else deal = {t, v:parseFloat(s.querySelector("#dv")?.value)||0};
+    summary();
+  }
+  function summary(){
+    const price = parseFloat(s.querySelector("#p").value);
+    const el = s.querySelector("#dsum");
+    if(isNaN(price)){ el.textContent = ""; return; }
+    const base = lineBase(ri.qty, price), tot = lineTotal(ri.qty, price, deal);
+    const saved = base - tot;
+    el.innerHTML = saved>0.009
+      ? `<span style="color:var(--go)">${ri.qty} × ${money(price)} = <b>${money(tot)}</b>, saving ${money(saved)}.</span>`
+      : `${ri.qty} × ${money(price)} = <b>${money(tot)}</b>.`;
+  }
+  dt.onchange = fields;
+  s.querySelector("#p").oninput = summary;
+  s.querySelectorAll("[data-p]").forEach(b=> b.onclick = ()=>{ s.querySelector("#p").value = b.dataset.p; summary(); });
+  fields();
+}
+
+/* add an item to a template list */
+function sheetAddItem(l){
+  const inList = new Set(liOf(l.id).map(x=>x.itemId));
+  const avail = S.items.filter(i=>!i.archived && !inList.has(i.id));
+  const opts = catSorted().map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  const s = sheet(`<h3>Add to ${esc(l.name)}</h3>
+    <p class="hint">Pick something you've bought before, or type a new name.</p>
+    <label class="f">Name<input type="text" id="n" placeholder="e.g. Rooibos tea" autocomplete="off"></label>
+    <label class="f">Aisle<select id="c">${opts}</select></label>
+    <div class="sugg" id="sg"></div>`,
+    [["Add to list", ()=>{
+      const nm = s.querySelector("#n").value.trim();
+      if(!nm){ toast("Give it a name."); return; }
+      let it = avail.find(i=>i.name.toLowerCase()===nm.toLowerCase());
+      if(!it){ it = {id:uid(), name:nm, catId:+s.querySelector("#c").value, archived:false}; S.items.push(it); }
+      S.listItems.push({id:uid(), listId:l.id, itemId:it.id, qty:1, status:"need"});
+      persist(); closeSheet(); render();
+    }]]);
+  const sg = s.querySelector("#sg"), inp = s.querySelector("#n");
+  function suggest(){
+    const q = inp.value.trim().toLowerCase();
+    const hits = (q ? avail.filter(i=>i.name.toLowerCase().includes(q)) : avail).slice(0,8);
+    sg.innerHTML = hits.map(i=>`<button data-i="${i.id}">${esc(i.name)}</button>`).join("");
+    sg.querySelectorAll("[data-i]").forEach(b=> b.onclick = ()=>{
+      const it = item(+b.dataset.i);
+      inp.value = it.name; s.querySelector("#c").value = it.catId;
+    });
+  }
+  inp.oninput = suggest; suggest();
+}
+
+/* add straight into a run (general lists, or a forgotten item) */
+function sheetAddToRun(r){
+  const have = new Set(riOf(r.id).map(x=>x.itemId));
+  const avail = S.items.filter(i=>!i.archived && !have.has(i.id));
+  const opts = catSorted().map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  const s = sheet(`<h3>Add an item</h3>
+    <p class="hint">Goes straight into this trip.</p>
+    <label class="f">Name<input type="text" id="n" autocomplete="off"></label>
+    <label class="f">Aisle<select id="c">${opts}</select></label>
+    <div class="sugg" id="sg"></div>`,
+    [["Add", ()=>{
+      const nm = s.querySelector("#n").value.trim();
+      if(!nm){ toast("Give it a name."); return; }
+      let it = avail.find(i=>i.name.toLowerCase()===nm.toLowerCase());
+      if(!it){ it = {id:uid(), name:nm, catId:+s.querySelector("#c").value, archived:false}; S.items.push(it); }
+      S.runItems.push({id:uid(), runId:r.id, itemId:it.id, name:it.name,
+                       qty:1, price:null, storeId:null, ticked:false, src:null});
+      const l = list(r.listId);
+      if(l && l.type!=="general" && !liOf(l.id).some(x=>x.itemId===it.id))
+        S.listItems.push({id:uid(), listId:l.id, itemId:it.id, qty:1, status:"no_need"});
+      persist(); closeSheet(); render();
+    }]]);
+  const sg = s.querySelector("#sg"), inp = s.querySelector("#n");
+  function suggest(){
+    const q = inp.value.trim().toLowerCase();
+    const hits = (q ? avail.filter(i=>i.name.toLowerCase().includes(q)) : avail).slice(0,8);
+    sg.innerHTML = hits.map(i=>`<button data-i="${i.id}">${esc(i.name)}</button>`).join("");
+    sg.querySelectorAll("[data-i]").forEach(b=> b.onclick = ()=>{
+      const it = item(+b.dataset.i); inp.value = it.name; s.querySelector("#c").value = it.catId; });
+  }
+  inp.oninput = suggest; suggest();
+}
+
+/* long-press options on a prep row */
+function sheetItemOpts(l, li){
+  const it = item(li.itemId);
+  sheet(`<h3>${esc(it.name)}</h3><p class="hint">In ${esc(cat(it.catId).name)}.${
+      it.track ? " Counted in your monthly tracker." : ""}</p>`,
+    [["Rename", ()=>{ closeSheet(); sheetRenameItem(it); }, "sec"],
+     ["Move to another aisle", ()=>{ closeSheet(); sheetMoveItem(it); }, "sec"],
+     [it.track ? "Stop counting it monthly" : "Count how many I buy a month", ()=>{
+        it.track = !it.track; persist(); closeSheet(); render();
+        toast(it.track ? "Counting "+it.name+" each month." : "Stopped counting "+it.name+".");
+      }, "sec"],
+     ["Take off this list", ()=>{
+        S.listItems = S.listItems.filter(x=>x.id!==li.id); persist(); closeSheet(); render();
+        toast("Removed from "+l.name);
+      }, "danger"]]);
+}
+function sheetRenameItem(it){
+  const s = sheet(`<h3>Rename</h3>
+    <label class="f">Name<input type="text" id="n" value="${esc(it.name)}"></label>
+    <p class="hint" style="margin-top:12px">Past receipts keep the old name, so your history stays accurate.</p>`,
+    [["Save", ()=>{
+      const v = s.querySelector("#n").value.trim();
+      if(!v){ toast("Give it a name."); return; }
+      it.name = v; persist(); closeSheet(); render();
+    }]]);
+}
+function sheetListOpts(l){
+  const opts = S.pots.map(p=>`<option value="${p.id}" ${p.id===l.potId?"selected":""}>${esc(p.name)}</option>`).join("");
+  const trips = S.runs.filter(r=>r.listId===l.id && r.status==="done").length;
+  const s = sheet(`<h3>${esc(l.name)}</h3>
+    <label class="f">Name<input type="text" id="n" value="${esc(l.name)}"></label>
+    <label class="f">Charges to<select id="p">
+      <option value="">Use each aisle's pot</option>${opts}</select></label>`,
+    [["Save", ()=>{
+      l.name = s.querySelector("#n").value.trim() || l.name;
+      const pv = s.querySelector("#p").value; l.potId = pv ? +pv : null;
+      persist(); closeSheet(); render();
+    }],
+     ["Delete this list", ()=>{
+      closeSheet();
+      sheet(`<h3>Delete ${esc(l.name)}?</h3><p class="hint">${
+        trips ? `Its ${trips} past receipt${trips===1?"":"s"} and budget history stay.` :
+        "It has no history yet."} The items themselves stay in your catalogue.</p>`,
+        [["Delete it", ()=>{
+          S.listItems = S.listItems.filter(x=>x.listId!==l.id);
+          l.archived = true; persist(); closeSheet(); UI.view="lists"; render();
+        }, "danger"]]);
+     }, "danger"]]);
+}
+function sheetMoveItem(it){
+  const opts = catSorted().map(c=>`<option value="${c.id}" ${c.id===it.catId?"selected":""}>${esc(c.name)}</option>`).join("");
+  const s = sheet(`<h3>${esc(it.name)}</h3><label class="f">Aisle<select id="c">${opts}</select></label>`,
+    [["Move it", ()=>{ it.catId = +s.querySelector("#c").value; persist(); closeSheet(); render(); }]]);
+}
+
+/* funding editor */
+function sheetFunding(r){
+  const total = runTotal(r);
+  let rows = S.funding.filter(f=>f.runId===r.id).map(f=>({potId:f.potId, amount:f.amount}));
+  const s = sheet(`<h3>Where did the money come from?</h3>
+    <p class="hint">Total ${money(total)}. Split it across pots, or mark part of it as saved money that sits outside the budget.</p>
+    <div id="rows"></div>
+    <button id="addrow" style="color:var(--go);font-weight:600;font-size:14px;margin-top:12px">Add another source</button>
+    <div id="chk" style="font-size:13px;margin-top:10px"></div>`,
+    [["Save", ()=>{
+      const sum = rows.reduce((a,b)=>a+(+b.amount||0),0);
+      if(Math.abs(sum-total) > 0.01){ toast("Sources must add up to "+money(total)); return; }
+      S.funding = S.funding.filter(f=>f.runId!==r.id);
+      rows.forEach(f=>S.funding.push({id:uid(), runId:r.id, potId:f.potId, amount:+f.amount}));
+      persist(); closeSheet(); render();
+    }]]);
+  function draw(){
+    const c = s.querySelector("#rows"); c.innerHTML="";
+    rows.forEach((f,i)=>{
+      const opts = S.pots.map(p=>`<option value="${p.id}" ${p.id===f.potId?"selected":""}>${esc(p.name)}</option>`).join("")
+                 + `<option value="ext" ${f.potId==null?"selected":""}>Saved money</option>`;
+      const row = h(`<div class="fundrow"><select>${opts}</select>
+        <input type="number" inputmode="decimal" step="0.01" value="${f.amount.toFixed(2)}">
+        <button class="x">×</button></div>`);
+      row.querySelector("select").onchange = e=>{
+        f.potId = e.target.value==="ext" ? null : +e.target.value; check(); };
+      row.querySelector("input").oninput = e=>{ f.amount = parseFloat(e.target.value)||0; check(); };
+      row.querySelector(".x").onclick = ()=>{ rows.splice(i,1); draw(); };
+      c.append(row);
+    });
+    check();
+  }
+  function check(){
+    const sum = rows.reduce((a,b)=>a+(+b.amount||0),0);
+    const d = total-sum;
+    s.querySelector("#chk").innerHTML = Math.abs(d)<0.01
+      ? `<span style="color:var(--go)">Adds up to ${money(total)}.</span>`
+      : `<span style="color:var(--over)">${money(Math.abs(d))} ${d>0?"still unallocated":"too much"}.</span>`;
+  }
+  s.querySelector("#addrow").onclick = ()=>{
+    const sum = rows.reduce((a,b)=>a+(+b.amount||0),0);
+    rows.push({potId:null, amount:Math.max(0,total-sum)}); draw();
+  };
+  draw();
+}
+
+/* pots, cats, stores, budgets, lists */
+function sheetPot(p){
+  const isNew = !p;
+  const s = sheet(`<h3>${isNew?"New pot":esc(p.name)}</h3>
+    <p class="hint">A pot is an envelope of money. Aisles point at a pot, so a shop splits itself automatically.</p>
+    <label class="f">Name<input type="text" id="n" value="${isNew?"":esc(p.name)}"></label>
+    <label class="f">Default each month<input type="number" inputmode="decimal" id="a" value="${isNew?"":p.amount}"></label>`,
+    [["Save", ()=>{
+      const n = s.querySelector("#n").value.trim(), a = parseFloat(s.querySelector("#a").value);
+      if(!n || isNaN(a)){ toast("Name and amount, please."); return; }
+      if(isNew) S.pots.push({id:uid(), name:n, amount:a,
+        color:["#1E7A4B","#4A6FA5","#8A6BA8","#B8761A","#4F7F7A"][S.pots.length%5], sort:S.pots.length+1});
+      else { p.name=n; p.amount=a; }
+      persist(); closeSheet(); render();
+    }]]);
+}
+function sheetCat(c){
+  const isNew = !c;
+  const opts = S.pots.map(p=>`<option value="${p.id}" ${!isNew&&p.id===c.potId?"selected":""}>${esc(p.name)}</option>`).join("");
+  const used = isNew ? 0 : S.items.filter(i=>i.catId===c.id && !i.archived).length;
+  const acts = [["Save", ()=>{
+      const nm = s.querySelector("#n").value.trim();
+      if(!nm){ toast("Give it a name."); return; }
+      if(isNew) S.cats.push({id:uid(), name:nm, sort:S.cats.length+1, potId:+s.querySelector("#p").value});
+      else { c.name = nm; c.potId = +s.querySelector("#p").value; }
+      persist(); closeSheet(); render();
+    }]];
+  if(!isNew) acts.push(["Delete this aisle", ()=>{
+      if(used){ toast(`Move its ${used} item${used===1?"":"s"} out first.`); return; }
+      S.cats = S.cats.filter(x=>x.id!==c.id); persist(); closeSheet(); render();
+    }, "danger"]);
+  const s = sheet(`<h3>${isNew?"New aisle":esc(c.name)}</h3>
+    <p class="hint">Everything in an aisle charges to its pot, so one shop splits itself across budgets.</p>
+    <label class="f">Name<input type="text" id="n" value="${isNew?"":esc(c.name)}" placeholder="e.g. Medical"></label>
+    <label class="f">Charges to<select id="p">${opts}</select></label>`, acts);
+}
+function sheetStore(st){
+  const isNew = !st;
+  const s = sheet(`<h3>${isNew?"New shop":esc(st.name)}</h3>
+    <p class="hint">Prices are remembered per shop, so the same item can cost different amounts in each.</p>
+    <label class="f">Name<input type="text" id="n" value="${isNew?"":esc(st.name)}"></label>`,
+    isNew
+      ? [["Add shop", ()=>{
+          const n = s.querySelector("#n").value.trim(); if(!n){ toast("Give it a name."); return; }
+          S.stores.push({id:uid(), name:n, archived:false}); persist(); closeSheet(); render(); }]]
+      : [["Save", ()=>{ st.name = s.querySelector("#n").value.trim()||st.name; persist(); closeSheet(); render(); }],
+         ["Remove this shop", ()=>{ st.archived=true; persist(); closeSheet(); render(); }, "danger"]]);
+}
+function sheetPotAmount(period, p){
+  const cur = potAmount(period, p.id);
+  const s = sheet(`<h3>${esc(p.name)} for ${periodLabel(period)}</h3>
+    <p class="hint">Changes this month only. The default of ${m0(p.amount)} stays for other months.</p>
+    <label class="f">Amount<input type="number" inputmode="decimal" id="a" value="${cur}"></label>`,
+    [["Save", ()=>{
+      const v = parseFloat(s.querySelector("#a").value);
+      if(isNaN(v)){ toast("Enter an amount."); return; }
+      setPotAmount(period, p.id, v); persist(); closeSheet(); render();
+    }]]);
+}
+function sheetExpense(period, e){
+  const isNew = !e;
+  const opts = S.pots.map(p=>`<option value="${p.id}" ${!isNew&&p.id===e.potId?"selected":""}>${esc(p.name)}</option>`).join("");
+  const acts = [["Save", ()=>{
+      const amt = parseFloat(s.querySelector("#a").value);
+      if(isNaN(amt) || amt<=0){ toast("Enter an amount."); return; }
+      const pv = s.querySelector("#p").value;
+      const note = s.querySelector("#n").value.trim();
+      if(isNew) S.expenses.push({id:uid(), period, potId: pv==="ext"?null:+pv,
+                                 amount:amt, note, at:Date.now()});
+      else { e.amount=amt; e.potId = pv==="ext"?null:+pv; e.note=note; }
+      persist(); closeSheet(); render();
+    }]];
+  if(!isNew) acts.push(["Delete", ()=>{
+      S.expenses = S.expenses.filter(x=>x.id!==e.id); persist(); closeSheet(); render();
+    }, "danger"]);
+  const s = sheet(`<h3>${isNew?"Unplanned spend":"Edit spend"}</h3>
+    <p class="hint">For a quick shop with no list. Just the amount — it comes off the pot straight away,
+    so it doesn't quietly vanish from the month.</p>
+    <label class="f">Amount<input type="number" inputmode="decimal" step="0.01" id="a"
+      value="${isNew?"":e.amount}" placeholder="0.00"></label>
+    <label class="f">Comes out of<select id="p">${opts}
+      <option value="ext" ${!isNew&&e.potId==null?"selected":""}>Saved money (off budget)</option></select></label>
+    <label class="f">What for (optional)<input type="text" id="n"
+      value="${isNew?"":esc(e.note||"")}" placeholder="e.g. milk and bread"></label>`, acts);
+  if(isNew){
+    const wk = S.pots.find(x=>/week/i.test(x.name));
+    if(wk) s.querySelector("#p").value = wk.id;
+  }
+}
+
+function sheetNewList(){
+  const opts = S.pots.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");
+  const s = sheet(`<h3>New list</h3>
+    <label class="f">Name<input type="text" id="n" placeholder="e.g. Birthday braai"></label>
+    <label class="f">Kind<select id="t">
+      <option value="monthly">Monthly — mark what you need each month</option>
+      <option value="weekly">Weekly — quick restocks</option>
+      <option value="general">One-off — an event or party</option></select></label>
+    <label class="f" id="pw">Charges to<select id="p"><option value="">Use each aisle's pot</option>${opts}</select></label>`,
+    [["Create list", ()=>{
+      const n = s.querySelector("#n").value.trim(); if(!n){ toast("Give it a name."); return; }
+      const pv = s.querySelector("#p").value;
+      S.lists.push({id:uid(), name:n, type:s.querySelector("#t").value,
+                    potId: pv?+pv:null, archived:false});
+      persist(); closeSheet(); render();
+    }]]);
+}
+
+/* ======================= backup ======================= */
+function exportData(){
+  const blob = new Blob([JSON.stringify(S,null,1)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "groceries-"+new Date().toISOString().slice(0,10)+".json";
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  S.lastExport = Date.now(); persist();
+  toast("Backup downloaded."); render();
+}
+function importData(){
+  const inp = document.createElement("input");
+  inp.type="file"; inp.accept="application/json,.json";
+  inp.onchange = ()=>{
+    const f = inp.files[0]; if(!f) return;
+    const rd = new FileReader();
+    rd.onload = ()=>{
+      let data;
+      try{ data = JSON.parse(rd.result); }catch(e){ toast("That file isn't a valid backup."); return; }
+      if(!data || !Array.isArray(data.items)){ toast("That file isn't a valid backup."); return; }
+      sheet(`<h3>Restore this backup?</h3>
+        <p class="hint">It replaces everything currently on this phone: ${data.items.length} items,
+        ${(data.prices||[]).length} prices, ${(data.runs||[]).length} trips.</p>`,
+        [["Restore", ()=>{ S = data; persist(); closeSheet(); UI={view:"lists",period:thisPeriod()}; render(); toast("Restored."); }]]);
+    };
+    rd.readAsText(f);
+  };
+  inp.click();
+}
+
+/* ======================= storage protection ======================= */
+/* Browsers can evict site data when space runs low. Installed apps are
+   normally granted persistence; ask for it explicitly either way. */
+async function checkPersistence(el){
+  if(!el) return;
+  if(!navigator.storage || !navigator.storage.persist){
+    el.textContent = "This browser can't guarantee your data survives a cleanup. Back up regularly.";
+    return;
+  }
+  try{
+    let ok = await navigator.storage.persisted();
+    if(!ok) ok = await navigator.storage.persist();
+    if(ok){
+      el.style.color = "var(--go)";
+      el.textContent = "Your data is protected — the phone won't clear it to free up space.";
+    }else{
+      el.style.color = "var(--warn)";
+      el.textContent = "Storage isn't protected yet. Install the app to your home screen and open it from there — the phone then keeps your data safe.";
+    }
+  }catch(e){
+    el.textContent = "Couldn't check storage protection. Back up regularly.";
+  }
+}
+
+/* ======================= service worker ======================= */
+if("serviceWorker" in navigator && location.protocol !== "file:"){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
+
+/* ======================= boot ======================= */
+(async function(){
+  S = await Store.load();
+  if(!S || !S.items) seed();
+  /* forward-compat: make sure new fields exist */
+  S.funding = S.funding||[]; S.periodPots = S.periodPots||[]; S.expenses = S.expenses||[];
+  UI.period = thisPeriod();
+  render();
+  try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+})();
+</script>
+</body>
+</html>
